@@ -349,7 +349,7 @@ mkAnonPipe (HANDLE* pHandleIn, BOOL isInheritableIn,
 
 ProcHandle
 runInteractiveProcess (wchar_t *cmd, wchar_t *workingDirectory, 
-                       void *environment,
+                       wchar_t *environment,
                        int fdStdIn, int fdStdOut, int fdStdErr,
 		       int *pfdStdInput, int *pfdStdOutput, int *pfdStdError,
                        int close_fds)

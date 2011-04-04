@@ -81,6 +81,10 @@ import GHC.IOBase	( haFD, FD, IOException(..) )
 import GHC.Handle
 #endif
 
+#if MIN_VERSION_base(4,3,2) && !defined(mingw32_HOST_OS)
+import qualified GHC.Foreign as GHC
+#endif
+
 # elif __HUGS__
 
 import Hugs.Exception	( IOException(..) )
@@ -228,8 +232,8 @@ runGenProcess_ fun CreateProcess{ cmdspec = cmdsp,
    alloca $ \ pfdStdOutput ->
    alloca $ \ pfdStdError  ->
    maybeWith withCEnvironment mb_env $ \pEnv ->
-   maybeWith withCString mb_cwd $ \pWorkDir ->
-   withMany withCString (cmd:args) $ \cstrs ->
+   maybeWith withFilePathLike mb_cwd $ \pWorkDir ->
+   withMany withFilePathLike (cmd:args) $ \cstrs ->
    withArray0 nullPtr cstrs $ \pargs -> do
      
      fdin  <- mbFd fun fd_stdin  mb_stdin
@@ -350,7 +354,7 @@ foreign import ccall unsafe "runInteractiveProcess"
   c_runInteractiveProcess
         :: CWString
         -> CWString
-        -> Ptr ()
+        -> Ptr CWString
         -> FD
         -> FD
         -> FD
@@ -359,6 +363,13 @@ foreign import ccall unsafe "runInteractiveProcess"
         -> Ptr FD
         -> CInt                         -- close_fds
         -> IO PHANDLE
+
+withFilePathLike :: FilePath -> (Ptr CString -> IO a) -> IO a
+#if __GLASGOW_HASKELL__ && MIN_VERSION_base(4,3,2)
+withFilePathLike = GHC.withCString fileSystemEncoding
+#else
+withFilePathLike = withCString
+#endif
 
 #endif /* __GLASGOW_HASKELL__ */
 
@@ -591,9 +602,9 @@ withCEnvironment envir act =
   let env' = map (\(name, val) -> name ++ ('=':val)) envir 
   in withMany withCString env' (\pEnv -> withArray0 nullPtr pEnv act)
 #else
-withCEnvironment :: [(String,String)] -> (Ptr () -> IO a) -> IO a
+withCEnvironment :: [(String,String)] -> (Ptr CWString -> IO a) -> IO a
 withCEnvironment envir act =
   let env' = foldr (\(name, val) env -> name ++ ('=':val)++'\0':env) "\0" envir
-  in withCString env' (act . castPtr)
+  in withCWString env' (act . castPtr)
 #endif
 
