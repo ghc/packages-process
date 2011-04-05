@@ -81,10 +81,6 @@ import GHC.IOBase	( haFD, FD, IOException(..) )
 import GHC.Handle
 #endif
 
-#if MIN_VERSION_base(4,3,2) && !defined(mingw32_HOST_OS)
-import qualified GHC.Foreign as GHC
-#endif
-
 # elif __HUGS__
 
 import Hugs.Exception	( IOException(..) )
@@ -214,13 +210,6 @@ runGenProcess_
 
 #ifdef __GLASGOW_HASKELL__
 
-withFilePathLike :: FilePath -> (Ptr CString -> IO a) -> IO a
-#if __GLASGOW_HASKELL__ >= 611 && MIN_VERSION_base(4,3,2)
-withFilePathLike = GHC.withCString fileSystemEncoding
-#else
-withFilePathLike = withCString
-#endif
-
 -- -----------------------------------------------------------------------------
 -- POSIX runProcess with signal handling in the child
 
@@ -239,8 +228,8 @@ runGenProcess_ fun CreateProcess{ cmdspec = cmdsp,
    alloca $ \ pfdStdOutput ->
    alloca $ \ pfdStdError  ->
    maybeWith withCEnvironment mb_env $ \pEnv ->
-   maybeWith withFilePathLike mb_cwd $ \pWorkDir ->
-   withMany withFilePathLike (cmd:args) $ \cstrs ->
+   maybeWith withFilePath mb_cwd $ \pWorkDir ->
+   withMany withFilePath (cmd:args) $ \cstrs ->
    withArray0 nullPtr cstrs $ \pargs -> do
      
      fdin  <- mbFd fun fd_stdin  mb_stdin
