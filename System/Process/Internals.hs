@@ -214,6 +214,13 @@ runGenProcess_
 
 #ifdef __GLASGOW_HASKELL__
 
+withFilePathLike :: FilePath -> (Ptr CString -> IO a) -> IO a
+#if __GLASGOW_HASKELL__ >= 611 && MIN_VERSION_base(4,3,2)
+withFilePathLike = GHC.withCString fileSystemEncoding
+#else
+withFilePathLike = withCString
+#endif
+
 -- -----------------------------------------------------------------------------
 -- POSIX runProcess with signal handling in the child
 
@@ -363,17 +370,9 @@ foreign import ccall unsafe "runInteractiveProcess"
         -> Ptr FD
         -> CInt                         -- close_fds
         -> IO PHANDLE
-
-withFilePathLike :: FilePath -> (Ptr CString -> IO a) -> IO a
-#if __GLASGOW_HASKELL__ && MIN_VERSION_base(4,3,2)
-withFilePathLike = GHC.withCString fileSystemEncoding
-#else
-withFilePathLike = withCString
 #endif
 
 #endif /* __GLASGOW_HASKELL__ */
-
-#endif
 
 fd_stdin, fd_stdout, fd_stderr :: FD
 fd_stdin  = 0
