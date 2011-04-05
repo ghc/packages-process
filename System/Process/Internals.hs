@@ -81,7 +81,7 @@ import GHC.IOBase	( haFD, FD, IOException(..) )
 import GHC.Handle
 #endif
 
-#if MIN_VERSION_base(4,3,2) && !defined(mingw32_HOST_OS)
+#if (__GLASGOW_HASKELL__ > 700) && !defined(mingw32_HOST_OS)
 import qualified GHC.Foreign as GHC
 #endif
 
@@ -365,7 +365,7 @@ foreign import ccall unsafe "runInteractiveProcess"
         -> IO PHANDLE
 
 withFilePathLike :: FilePath -> (Ptr CString -> IO a) -> IO a
-#if __GLASGOW_HASKELL__ && MIN_VERSION_base(4,3,2)
+#if __GLASGOW_HASKELL__ > 700
 withFilePathLike = GHC.withCString fileSystemEncoding
 #else
 withFilePathLike = withCString
