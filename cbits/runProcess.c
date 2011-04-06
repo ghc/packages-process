@@ -430,12 +430,12 @@ runInteractiveProcess (wchar_t *cmd, wchar_t *workingDirectory,
             sInfo.hStdError = hStdErrorWrite;
         }
 
+    // We always pass a wide environment block, so we MUST set this flag 
+    flags = CREATE_UNICODE_ENVIRONMENT;
 	if (sInfo.hStdInput  != GetStdHandle(STD_INPUT_HANDLE)  &&
 	    sInfo.hStdOutput != GetStdHandle(STD_OUTPUT_HANDLE) &&
 	    sInfo.hStdError  != GetStdHandle(STD_ERROR_HANDLE))
-		flags = CREATE_NO_WINDOW;   // Run without console window only when both output and error are redirected
-	else
-		flags = 0;
+		flags = flags | CREATE_NO_WINDOW;   // Run without console window only when both output and error are redirected
 
         // See #3231
         if (close_fds && fdStdIn == 0 && fdStdOut == 1 && fdStdErr == 2) {
