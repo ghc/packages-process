@@ -24,7 +24,6 @@ main = do
                 else error $ "echo returned: " ++ show ec
 
     test "detach_console" $ \cp -> cp { detach_console = True }
-    test "create_new_console" $ \cp -> cp { create_new_console = True }
     test "new_session" $ \cp -> cp { new_session = True }
 
     putStrLn "Tests passed successfully"
