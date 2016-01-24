@@ -62,7 +62,6 @@ before_install:
  - unset CC
  - export PATH=/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:$HOME/.local/bin:$PATH
  - mkdir -p ~/.local/bin
- - cabal --version
  - if [ `uname` = "Darwin" ];
    then
      curl --insecure -L https://www.stackage.org/stack/osx-x86_64 | tar xz --strip-components=1 --include '*/stack' -C ~/.local/bin;
