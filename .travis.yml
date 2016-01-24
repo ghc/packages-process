@@ -5,6 +5,7 @@ cache:
   directories:
   - $HOME/.ghc
   - $HOME/.cabal
+  - $HOME/.stack
 
 matrix:
   include:
@@ -35,6 +36,22 @@ matrix:
     compiler: ": #GHC 7.10.3"
     addons: {apt: {packages: [cabal-install-1.22,ghc-7.10.3], sources: [hvr-ghc]}}
 
+  - env: BUILD=stack GHCVER=7.8.4
+    compiler: ": #stack 7.8.4"
+    addons: {apt: {packages: [ghc-7.8.4], sources: [hvr-ghc]}}
+
+  - env: BUILD=stack GHCVER=7.10.3
+    compiler: ": #stack 7.10.3"
+    addons: {apt: {packages: [ghc-7.10.3], sources: [hvr-ghc]}}
+
+  - env: BUILD=stack GHCVER=7.8.4
+    compiler: ": #stack 7.8.4 osx"
+    os: osx
+
+  - env: BUILD=stack GHCVER=7.10.3
+    compiler: ": #stack 7.10.3 osx"
+    os: osx
+
   - env: BUILD=cabal GHCVER=head  CABALVER=head
     addons: {apt: {packages: [cabal-install-head,ghc-head], sources: [hvr-ghc]}}
 
@@ -42,27 +59,46 @@ matrix:
   - env: BUILD=cabal GHCVER=head  CABALVER=head
 
 before_install:
- - export PATH=/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:$PATH
+ - unset CC
+ - export PATH=/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:$HOME/.local/bin:$PATH
+ - mkdir -p ~/.local/bin
  - cabal --version
+ - if [ `uname` = "Darwin" ];
+   then
+     curl --insecure -L https://www.stackage.org/stack/osx-x86_64 | tar xz --strip-components=1 --include '*/stack' -C ~/.local/bin;
+   else
+     curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack';
+   fi
 
 install:
- - travis_retry cabal update
- - cabal install --only-dependencies
- - ghc --version
+ - echo "$(ghc --version) [$(ghc --print-project-git-commit-id 2> /dev/null || echo '?')]"
+ - case "$BUILD" in
+     stack)
+       stack --no-terminal test --only-dependencies;;
+     cabal)
+       cabal --version;
+       travis_retry cabal update;
+       rm -f $(stack path --dist-dir)/stack-*.tar.gz;
+       stack sdist --pvp-bounds=both;
+       tar xf $(stack path --dist-dir)/stack-*.tar.gz --wildcards --strip-components=1 '*/stack.cabal';
+       cabal install --only-dependencies --enable-tests --enable-benchmarks --force-reinstalls --ghc-options=-O0;;
+   esac
 
 script:
- - autoreconf -i
- - cabal configure -v2 --enable-tests --ghc-options="-Wall -Werror"
- - cabal build
- - cabal check || [ "$CABALVER" == "1.16" ]
- - ./dist/build/test/test # Using cabal test was giving trouble with cabal 1.22
- - cabal sdist
-# The following scriptlet checks that the resulting source distribution can be built & installed
- - export SRC_TGZ=$(cabal info . | awk '{print $2 ".tar.gz";exit}') ;
-   cd dist/;
-   if [ -f "$SRC_TGZ" ]; then
-      cabal install --force-reinstalls "$SRC_TGZ";
-   else
-      echo "expected '$SRC_TGZ' not found";
-      exit 1;
-   fi
+ - case "$BUILD" in
+     stack)
+       stack --no-terminal test --haddock --no-haddock-deps;;
+     cabal)
+       cabal configure --enable-tests --enable-benchmarks -v2 --ghc-options="-O0 -Werror";
+       cabal build;
+       cabal test;
+       cabal check;
+       cabal sdist;
+       cabal copy;
+       cd test/integration;
+       true stack setup;
+       true stack test;
+       cd ../..;
+       SRC_TGZ=$(cabal info . | awk '{print $2;exit}').tar.gz &&
+       (cd dist && cabal install --force-reinstalls "$SRC_TGZ");;
+   esac
