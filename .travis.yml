@@ -93,7 +93,8 @@ script:
        cabal configure --enable-tests --enable-benchmarks -v2 --ghc-options="-O0 -Werror";
        cabal build;
        cabal check || [ "$CABALVER" == "1.16" ];
-       ./dist/build/test/test; # Using cabal test was giving trouble with cabal 1.22
+       true Using cabal test was giving trouble with cabal 1.22;
+       ./dist/build/test/test;
        cabal sdist;
        cabal copy;
        SRC_TGZ=$(cabal info . | awk '{print $2;exit}').tar.gz &&
