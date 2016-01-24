@@ -74,6 +74,8 @@ install:
  - autoreconf -i
  - case "$BUILD" in
      stack)
+       rm -f stack.yaml;
+       stack init --resolver ghc-$GHCVER;
        stack --no-terminal test --only-dependencies;;
      cabal)
        cabal --version;
