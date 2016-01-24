@@ -72,7 +72,8 @@ before_install:
 install:
  - echo "$(ghc --version) [$(ghc --print-project-git-commit-id 2> /dev/null || echo '?')]"
  - autoreconf -i
- - case "$BUILD" in
+ - |
+   case "$BUILD" in
      stack)
        echo "resolver: ghc-$GHCVER" > stack.yaml;
        stack --no-terminal test --only-dependencies;;
