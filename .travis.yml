@@ -72,6 +72,7 @@ before_install:
 
 install:
  - echo "$(ghc --version) [$(ghc --print-project-git-commit-id 2> /dev/null || echo '?')]"
+ - autoreconf -i
  - case "$BUILD" in
      stack)
        stack --no-terminal test --only-dependencies;;
@@ -91,14 +92,10 @@ script:
      cabal)
        cabal configure --enable-tests --enable-benchmarks -v2 --ghc-options="-O0 -Werror";
        cabal build;
-       cabal test;
-       cabal check;
+       cabal check || [ "$CABALVER" == "1.16" ];
+       ./dist/build/test/test; # Using cabal test was giving trouble with cabal 1.22
        cabal sdist;
        cabal copy;
-       cd test/integration;
-       true stack setup;
-       true stack test;
-       cd ../..;
        SRC_TGZ=$(cabal info . | awk '{print $2;exit}').tar.gz &&
        (cd dist && cabal install --force-reinstalls "$SRC_TGZ");;
    esac
